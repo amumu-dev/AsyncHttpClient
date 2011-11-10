@@ -36,7 +36,8 @@ class AsyncHttpClient {
     protected $paramsPost = array();
     protected $enctype = null;
     protected $timeout = 3;
-    protected $finishWrite = false;
+    protected $response = null;
+    protected $callback = null;
 
     public $config = array(
         'eventbase' => null,
@@ -77,7 +78,7 @@ class AsyncHttpClient {
         return $this;
     }
 
-    public function request() {
+    public function request($callback = null) {
         $tmp = $this->uriInfo;
         $port = isset($tmp['port']) ? $tmp['port'] : 80;
         $socket = stream_socket_client("$tmp[host]:$port", $errno, $errstr, 
@@ -97,6 +98,9 @@ class AsyncHttpClient {
                 array($this, 'onRead'), array($readEvent, $base));
         event_base_set($readEvent, $base);
         event_add($readEvent);
+
+        if(!empty($callback))
+            $this->callback = $callback;
     }
 
     public function onAccept($socket, $event, $args) {
@@ -110,12 +114,15 @@ class AsyncHttpClient {
 
     public function onRead($socket, $event, $args) {
         while($chunk = fread($socket, 4096)) {
-            echo $chunk;
+            $this->response.= $chunk;
         }
 
         if(feof($socket)) {
             fclose($socket);
             event_del($args[0]);
+            call_user_func($this->callback, array(
+                'response' => $this->response,
+            ));
         }
     }
 

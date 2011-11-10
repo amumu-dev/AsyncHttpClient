@@ -10,7 +10,11 @@ $config = array(
 
 for($i = 0; $i < 10; $i++) {
     $client = new AsyncHttpClient($uri, $config);
-    $client->request();
+    $client->request(function($result) {
+        echo "Result len:";
+        echo strlen($result['response']);
+        echo "\n";
+    });
 }
 
 event_base_loop($base);
