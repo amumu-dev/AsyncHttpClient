@@ -80,7 +80,6 @@ class AsyncHttpClient {
     public function request() {
         $tmp = $this->uriInfo;
         $port = isset($tmp['port']) ? $tmp['port'] : 80;
-        print_r($tmp);print_r("$tmp[host]:$port\n");
         $socket = stream_socket_client("$tmp[host]:$port", $errno, $errstr, 
             $this->timeout, STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT); 
         stream_set_blocking($socket, 0);
@@ -116,6 +115,7 @@ class AsyncHttpClient {
 
         if(feof($socket)) {
             fclose($socket);
+            event_del($args[0]);
         }
     }
 
