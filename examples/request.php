@@ -3,7 +3,7 @@ require __DIR__ . '/../src/AsyncHttpClient.php';
 
 $base = event_base_new();
 
-$uri = "http://www.google.com/";
+$uri = "http://www.baidu.com/";
 $config = array(
     'eventbase' => $base
 );

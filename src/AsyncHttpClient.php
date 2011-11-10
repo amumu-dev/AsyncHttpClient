@@ -94,7 +94,7 @@ class AsyncHttpClient {
         event_add($writeEvent);
 
         $readEvent = event_new();
-        event_set($readEvent, $socket, EV_READ, 
+        event_set($readEvent, $socket, EV_READ | EV_PERSIST, 
                 array($this, 'onRead'), array($readEvent, $base));
         event_base_set($readEvent, $base);
         event_add($readEvent);
@@ -111,7 +111,7 @@ class AsyncHttpClient {
 
     public function onRead($socket, $event, $args) {
         while($chunk = fread($socket, 4096)) {
-            //echo $chunk;
+            echo $chunk;
         }
 
         if(feof($socket)) {
