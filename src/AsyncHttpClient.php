@@ -120,9 +120,11 @@ class AsyncHttpClient {
         if(feof($socket)) {
             fclose($socket);
             event_del($args[0]);
-            call_user_func($this->callback, array(
-                'response' => $this->response,
-            ));
+            if($this->callback) {
+                call_user_func($this->callback, array(
+                    'response' => $this->response,
+                ));
+            }
         }
     }
 
