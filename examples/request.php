@@ -1,6 +1,14 @@
 <?php
 require __DIR__ . '/../src/AsyncHttpClient.php';
 
+/*
+// autoload
+function __autoload($clazz) {
+    $file = str_replace('_', '/', $clazz);
+    require "/usr/share/pear/$file.php";
+}
+*/
+
 $base = event_base_new();
 
 $uri = "http://www.baidu.com/";
@@ -13,6 +21,8 @@ for($i = 0; $i < 10; $i++) {
     $client->request(function($result) {
         echo "Result len:";
         echo strlen($result['response']);
+        //$response = Zend_Http_Response::fromString($result['response']);
+        //echo $response->getBody();
         echo "\n";
     });
 }

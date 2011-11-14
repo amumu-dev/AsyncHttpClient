@@ -59,8 +59,7 @@ class AsyncHttpClient {
      * @param  array $config
      * @throws InvalidArgumentException
      */
-    public function setConfig($config = array())
-    {
+    public function setConfig($config = array()) {
         if (!is_array($config)) {
             throw new InvalidArgumentException('Array expected, got ' . gettype($config));
         }
@@ -76,6 +75,61 @@ class AsyncHttpClient {
         $this->uri = $uri;
         $this->uriInfo = parse_url($this->uri);
         return $this;
+    }
+
+    public function setMethod($method = self::GET) {
+        if ($method == self::POST && $this->enctype === null) {
+            $this->setEncType(self::ENC_URLENCODED);
+        }
+
+        $this->method = $method;
+        return $this;
+    }
+
+    public function setEncType($enctype = self::ENC_URLENCODED) {
+        $this->enctype = $enctype;
+        return $this;
+    }
+
+    public function setParameterGet($name, $value = null) {
+        if (is_array($name)) {
+            foreach ($name as $k => $v)
+                $this->_setParameter('GET', $k, $v);
+        } else {
+            $this->_setParameter('GET', $name, $value);
+        }
+
+        return $this;
+    }
+
+    public function setParameterPost($name, $value = null) {
+        if (is_array($name)) {
+            foreach ($name as $k => $v)
+                $this->_setParameter('POST', $k, $v);
+        } else {
+            $this->_setParameter('POST', $name, $value);
+        }
+
+        return $this;
+    }
+
+    protected function _setParameter($type, $name, $value) {
+        $parray = array();
+        $type = strtolower($type);
+        switch ($type) {
+            case 'get':
+                $parray = &$this->paramsGet;
+                break;
+            case 'post':
+                $parray = &$this->paramsPost;
+                break;
+        }
+
+        if ($value === null) {
+            if (isset($parray[$name])) unset($parray[$name]);
+        } else {
+            $parray[$name] = $value;
+        }
     }
 
     public function request($callback = null) {
