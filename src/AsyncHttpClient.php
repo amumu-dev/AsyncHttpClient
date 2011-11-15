@@ -143,13 +143,13 @@ class AsyncHttpClient {
 
         $writeEvent = event_new();
         event_set($writeEvent, $socket, EV_WRITE, 
-                array($this, 'onAccept'), array($writeEvent, $base));
+            array($this, 'onAccept'), array($writeEvent, $base));
         event_base_set($writeEvent, $base);
         event_add($writeEvent);
 
         $readEvent = event_new();
         event_set($readEvent, $socket, EV_READ | EV_PERSIST, 
-                array($this, 'onRead'), array($readEvent, $base));
+            array($this, 'onRead'), array($readEvent, $base));
         event_base_set($readEvent, $base);
         event_add($readEvent);
 
@@ -181,5 +181,9 @@ class AsyncHttpClient {
             }
         }
     }
+
+    protected function _prepareBody() {}
+
+    protected function _prepareHeaders() {}
 
 }
