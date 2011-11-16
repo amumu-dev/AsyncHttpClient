@@ -25,28 +25,21 @@ class AsyncHttpClient extends Zend_Http_Client {
         }
 
         if ($method) {
+            error_log('aaa');
             $this->setMethod($method);
         }
 
-        $uri = clone $this->uri;
-        if (! empty($this->paramsGet)) {
-            $query = $uri->getQuery();
-               if (! empty($query)) {
-                   $query .= '&';
-               }
-            $query .= http_build_query($this->paramsGet, null, '&');
-
-            $uri->setQuery($query);
-        }
-
-        $body = $this->_prepareBody();
-        $headers = $this->_prepareHeaders();
-
+        $uri = $this->uri;
         $port = isset($tmp['port']) ? $tmp['port'] : 80;
         $host = $uri->getHost();
         $port = $uri->getPort();
-        $socket = stream_socket_client("$host:$port", $errno, $errstr, 
-            $this->timeout, STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT); 
+        $socket = stream_socket_client(
+            "$host:$port", 
+            $errno, 
+            $errstr, 
+            (int) $this->config['timeout'],
+             STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT
+         ); 
         stream_set_blocking($socket, 0);
 
         $base = $this->config['eventbase'];
@@ -68,14 +61,44 @@ class AsyncHttpClient extends Zend_Http_Client {
     }
 
     public function onAccept($socket, $event, $args) {
+        $uri = clone $this->uri;
+        if (!empty($this->paramsGet)) {
+            $query = $uri->getQuery();
+            if (!empty($query)) {
+                $query .= '&';
+            }
+            $query .= http_build_query($this->paramsGet, null, '&');
+
+            $uri->setQuery($query);
+        }
+
         $body = $this->_prepareBody();
         $headers = $this->_prepareHeaders();
 
-        $url = isset($tmp['query']) ? "$tmp[path]?$tmp[query]" : $tmp['path'];
-        $out = "$this->method $url HTTP/1.1\r\n";
-        $out .= "Host: $tmp[host]\r\n";
-        $out .= "Connection: Close\r\n\r\n";
-        fwrite($socket, $out);
+        $host = $uri->getHost();
+        $host = (strtolower($uri->getScheme()) == 'https' ? 
+            $this->config['ssltransport'] : 'tcp') . '://' . $host;
+
+        $httpVer = '1.1';
+        $path = $uri->getPath();
+        if ($uri->getQuery()) $path .= '?' . $uri->getQuery();
+        $request = "{$this->method} {$path} HTTP/{$httpVer}\r\n";
+        foreach ($headers as $k => $v) {
+            if (is_string($k)) $v = ucfirst($k) . ": $v";
+            $request .= "$v\r\n";
+        }
+
+        if(is_resource($body)) {
+            $request .= "\r\n";
+        } else {
+            // Add the request body
+            $request .= "\r\n" . $body;
+        }
+
+        if(!fwrite($socket, $request)) {
+            require_once 'Zend/Http/Client/Adapter/Exception.php';
+            throw new Zend_Http_Client_Adapter_Exception('Error writing request to server');
+        }
     }
 
     public function onRead($socket, $event, $args) {
@@ -86,8 +109,8 @@ class AsyncHttpClient extends Zend_Http_Client {
         if(feof($socket)) {
             fclose($socket);
             event_del($args[0]);
-            if($this->callback) {
-                call_user_func($this->callback, array(
+            if($this->config['callback']) {
+                call_user_func($this->config['callback'], array(
                     'response' => $this->response,
                 ));
             }
