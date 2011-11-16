@@ -18,8 +18,34 @@ class AsyncHttpClient extends Zend_Http_Client {
     );
 
     public function request($method = null) {
+        if (! $this->uri instanceof Zend_Uri_Http) {
+            /** @see Zend_Http_Client_Exception */
+            require_once 'Zend/Http/Client/Exception.php';
+            throw new Zend_Http_Client_Exception('No valid URI has been passed to the client');
+        }
+
+        if ($method) {
+            $this->setMethod($method);
+        }
+
+        $uri = clone $this->uri;
+        if (! empty($this->paramsGet)) {
+            $query = $uri->getQuery();
+               if (! empty($query)) {
+                   $query .= '&';
+               }
+            $query .= http_build_query($this->paramsGet, null, '&');
+
+            $uri->setQuery($query);
+        }
+
+        $body = $this->_prepareBody();
+        $headers = $this->_prepareHeaders();
+
         $port = isset($tmp['port']) ? $tmp['port'] : 80;
-        $socket = stream_socket_client("$tmp[host]:$port", $errno, $errstr, 
+        $host = $uri->getHost();
+        $port = $uri->getPort();
+        $socket = stream_socket_client("$host:$port", $errno, $errstr, 
             $this->timeout, STREAM_CLIENT_ASYNC_CONNECT | STREAM_CLIENT_CONNECT); 
         stream_set_blocking($socket, 0);
 
